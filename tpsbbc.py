@@ -4,6 +4,7 @@ import os
 import mimetypes
 import pandas as pd
 from datetime import datetime
+import time  # 导入time模块
 
 def upload_file(file_path, user):
     upload_url = "http://34.70.196.96/v1/files/upload"
@@ -12,6 +13,8 @@ def upload_file(file_path, user):
     }
 
     try:
+        print("准备上传文件...")
+       # time.sleep(3)  # 上传前等待2秒
         print("上传文件中...")
         with open(file_path, 'rb') as file:
             mime_type, _ = mimetypes.guess_type(file_path)
@@ -26,6 +29,7 @@ def upload_file(file_path, user):
             print("response:", response.json())
             if response.status_code == 201:
                 print("文件上传成功")
+                #time.sleep(3)  # 上传后等待2秒
                 try:
                     return response.json().get("id")
                 except ValueError:
@@ -43,7 +47,7 @@ def upload_file(file_path, user):
 
 def send_api_request(image_path):
     # 首先上传文件
-    uploaded_url = upload_file(image_path,"abc-123")
+    uploaded_url = upload_file(image_path, "abc-123")
     if not uploaded_url:
         print(f"跳过处理 {image_path} 因为文件上传失败")
         return None
@@ -126,14 +130,15 @@ def process_image_directory(directory_path):
     # 创建DataFrame并保存到Excel
     if results:
         df = pd.DataFrame(results)
-        excel_path = os.path.join(directory_path, '2.xlsm')
+        excel_path = os.path.join(directory_path, '1.xlsm')
         df.to_excel(excel_path, index=False)
         print(f"\n结果已保存到: {excel_path}")
+        #time.sleep(2)  # 保存后等待2秒
 
 
 if __name__ == '__main__':
     # 指定要处理的图片目录
-    image_dir = "C:/Users/Administrator/Desktop/111"
+    image_dir = "C:/Users/Administrator/Desktop/TP"
     if os.path.isdir(image_dir):
         process_image_directory(image_dir)
     else:
