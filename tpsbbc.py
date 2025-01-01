@@ -4,46 +4,47 @@ import os
 import mimetypes
 import pandas as pd
 from datetime import datetime
-import time  # 导入time模块
 
-def upload_file(file_path, user):
+def upload_file(file_path, user, max_retries=3):
     upload_url = "http://34.70.196.96/v1/files/upload"
     headers = {
         "Authorization": "Bearer app-Z2uoOcA7WBvpT3JzRrCZAczy",
     }
 
-    try:
-        print("准备上传文件...")
-       # time.sleep(3)  # 上传前等待2秒
-        print("上传文件中...")
-        with open(file_path, 'rb') as file:
-            mime_type, _ = mimetypes.guess_type(file_path)
-            files = {'file': (file_path, file, mime_type or 'application/octet-stream')}
+    retries = 0
+    while retries < max_retries:
+        try:
+            print("准备上传文件...")
+            print("上传文件中...")
+            with open(file_path, 'rb') as file:
+                mime_type, _ = mimetypes.guess_type(file_path)
+                files = {'file': (file_path, file, mime_type or 'application/octet-stream')}
 
-            data = {
-                "user": user,
-                "type": "IMAGE"
-            }
+                data = {
+                    "user": user,
+                    "type": "IMAGE"
+                }
 
-            response = requests.post(upload_url, headers=headers, files=files, data=data)
-            print("response:", response.json())
-            if response.status_code == 201:
-                print("文件上传成功")
-                #time.sleep(3)  # 上传后等待2秒
-                try:
-                    return response.json().get("id")
-                except ValueError:
-                    print("解析响应JSON失败")
-                    print(f"原始响应: {response.text}")
-                    return None
-            else:
-                print(f"文件上传失败，状态码: {response.status_code}")
-                print(f"响应内容: {response.text}")
-                return None
-    except Exception as e:
-        print(f"发生错误: {str(e)}")
-        return None  
+                response = requests.post(upload_url, headers=headers, files=files, data=data)
+                if response.status_code == 201:
+                    print("文件上传成功")
+                    try:
+                        return response.json().get("id")
+                    except ValueError:
+                        print("解析响应JSON失败")
+                        print(f"原始响应: {response.text}")
+                        return None
+                else:
+                    print(f"文件上传失败，状态码: {response.status_code}")
+                    print(f"响应内容: {response.text}")
+        except Exception as e:
+            print(f"发生错误: {str(e)}")
+        
+        retries += 1
+        print(f"重试上传 ({retries}/{max_retries})...")
 
+    print("文件上传失败，超过最大重试次数")
+    return None
 
 def send_api_request(image_path):
     # 首先上传文件
@@ -92,7 +93,6 @@ def send_api_request(image_path):
         print(f'Error occurred: {e}')
         return None
 
-
 def process_image_directory(directory_path):
     """处理指定目录下的所有图片并保存结果到Excel"""
     # 支持的图片格式
@@ -133,8 +133,6 @@ def process_image_directory(directory_path):
         excel_path = os.path.join(directory_path, '1.xlsm')
         df.to_excel(excel_path, index=False)
         print(f"\n结果已保存到: {excel_path}")
-        #time.sleep(2)  # 保存后等待2秒
-
 
 if __name__ == '__main__':
     # 指定要处理的图片目录
