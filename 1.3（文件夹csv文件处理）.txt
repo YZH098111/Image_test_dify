@@ -1,0 +1,63 @@
+import pandas as pd
+import os
+
+# 指定要处理的文件夹路径
+folder_path = r"C:\Users\1\Desktop\C"
+
+def process_files(folder_path):
+    # 遍历主文件夹及其子文件夹
+    for root, dirs, files in os.walk(folder_path):
+        # 跳过.venv和.vscode文件夹
+        if '.venv' in root or '.vscode' in root:
+            continue
+            
+        for filename in files:
+            if filename.endswith('.csv'):
+                file_path = os.path.join(root, filename)
+                try:
+                    # 读取CSV文件，尝试不同的编码
+                    encodings = ['gbk', 'gb2312', 'utf-8', 'utf-8-sig']
+                    df = None
+                    
+                    # 读取整个CSV文件
+                    for encoding in encodings:
+                        try:
+                            df = pd.read_csv(file_path, encoding=encoding)
+                            break
+                        except UnicodeDecodeError:
+                            continue
+                    
+                    if df is None:
+                        print(f"无法读取文件 {filename}：不支持的编码格式")
+                        continue
+                        
+                    if df.empty:
+                        print(f"警告：文件 {filename} 是空的")
+                        continue
+                    
+                    # 插入两列
+                    df.insert(1, 'UPC名称', df.columns[0])  # Fill with first cell of the header
+                    df.insert(2, 'U城市指标', os.path.basename(root))  # Fill with folder name
+                    
+                    # 删除标题行
+                    df.columns = df.iloc[0]  # Set the first row as the header
+                    df = df.drop(index=0).reset_index(drop=True)
+                    
+                    # 修改B, C列的标题
+                    df.columns.values[1] = 'UPC名称'
+                    df.columns.values[2] = 'U城市指标'
+                    
+                    # 保存修改后的文件
+                    df.to_csv(file_path, index=False, encoding='utf-8-sig')
+                    print(f"已处理文件: {filename}")
+                    
+                except Exception as e:
+                    print(f"处理文件 {filename} 时出错: {str(e)}")
+
+if __name__ == "__main__":
+    print(f"开始处理文件夹: {folder_path}")
+    if os.path.exists(folder_path):
+        process_files(folder_path)
+        print("所有文件处理完成！")
+    else:
+        print(f"错误：文件夹 {folder_path} 不存在")
